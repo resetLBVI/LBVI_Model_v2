@@ -1,0 +1,211 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.reset</groupId>
+    <artifactId>RESET_LBVI</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>RESET_LBVI</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <geotools.version>34.0</geotools.version>
+        <maven.compiler.release>17</maven.compiler.release>
+    </properties>
+
+    <!-- Keep GeoTools modules aligned -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.geotools</groupId>
+                <artifactId>gt-bom</artifactId>
+                <version>${geotools.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- GeoTools -->
+        <dependency><groupId>org.geotools</groupId><artifactId>gt-shapefile</artifactId></dependency>
+        <dependency><groupId>org.geotools</groupId><artifactId>gt-swing</artifactId></dependency>
+        <dependency><groupId>org.geotools</groupId><artifactId>gt-geotiff</artifactId></dependency>
+        <dependency><groupId>org.geotools</groupId><artifactId>gt-coverage</artifactId></dependency>
+        <dependency><groupId>org.geotools</groupId><artifactId>gt-referencing</artifactId></dependency>
+        <dependency><groupId>org.geotools</groupId><artifactId>gt-epsg-hsql</artifactId></dependency>
+        <dependency><groupId>org.geotools</groupId><artifactId>gt-render</artifactId></dependency>
+        <dependency><groupId>org.geotools</groupId><artifactId>gt-main</artifactId></dependency>
+
+
+        <!-- ImageIO-Ext COG (JAI-free; uses Eclipse ImageN) -->
+        <dependency>
+            <groupId>it.geosolutions.imageio-ext</groupId>
+            <artifactId>imageio-ext-cog-reader</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>it.geosolutions.imageio-ext</groupId>
+            <artifactId>imageio-ext-cog-commons</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>it.geosolutions.imageio-ext</groupId>
+            <artifactId>imageio-ext-cog-streams</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+
+        <!-- TwelveMonkeys (pure-Java codecs) -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+            <version>3.9.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>3.9.4</version>
+        </dependency>
+
+        <!-- JTS (LocationTech) -->
+        <dependency>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
+            <version>1.19.0</version>
+        </dependency>
+
+        <!-- Apache Commons Math -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+
+        <!-- JUnit 5 for tests (@Test, @DisplayName, assertThrows, assertTrue, etc.) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Other deps we use -->
+        <dependency>
+            <groupId>java3d</groupId>
+            <artifactId>j3d-core</artifactId>
+            <version>1.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>edu.gmu.cs</groupId>
+            <artifactId>mason</artifactId>
+            <version>21</version>
+        </dependency>
+        <dependency>
+            <groupId>ca.umontreal.iro.simul</groupId>
+            <artifactId>ssj</artifactId>
+            <version>3.3.2</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <!-- Needed for ImageIO-Ext 2.x & TwelveMonkeys -->
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <!-- GeoTools -->
+        <repository>
+            <id>osgeo</id>
+            <name>OSGeo Releases</name>
+            <url>https://repo.osgeo.org/repository/release/</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <!-- Java 17 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+
+            <!-- (Optional) Fail build if legacy JAI sneaks in -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>ban-legacy-jai</id>
+                        <goals><goal>enforce</goal></goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>javax.media:jai_core</exclude>
+                                        <exclude>javax.media:jai_codec</exclude>
+                                        <exclude>javax.media:jai_imageio</exclude>
+                                        <exclude>com.sun.media:jai_imageio</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Shaded runnable JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <!-- drop signature files -->
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <!-- hard-block any legacy JAI classes if they ever appear -->
+                                        <exclude>com/sun/media/**</exclude>
+                                        <exclude>javax/media/jai/**</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>lbvi.LBVIWorldWithUI</mainClass>
+                                </transformer>
+                                <!-- keep Java SPI registrations -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- append Imagen/JAI registry files if present -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/registryFile.jai</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/registryFile.jaiext</resource>
+                                </transformer>
+                            </transformers>
+                            <minimizeJar>false</minimizeJar>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
