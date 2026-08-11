@@ -116,6 +116,7 @@ public class VegInfoIdentifier {
         ArundoDens = arundoDens;
         TamarDens = tamarDens;
         this.quality1 = quality1;
+        this.terrQuality = (int) quality1; //initial habitat quality index (0-n) from the Quality1 input column
         this.geometry = geometry;
         this.gridLoc = gridLoc;
         this.terrMaleID = -1;

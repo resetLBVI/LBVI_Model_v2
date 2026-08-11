@@ -33,7 +33,7 @@ public class LBVIAgent implements Steppable {
     int vireoNestID; //female's state variable, indicate current Nest ID
     int vireoNumEggs; //female's state variable, indicate the number of eggs in current attempt
     int vireoNumNestlings; //female's state variable, indicate the number of nestlings in current attempt
-    int vireoNumFledglings; //female's state variable, indicate the number of fledglings in current attempt
+    int vireoNumFledglings; //female's state variable, indicate the number of vireo fledglings in current attempt
     int vireoNumRecruits; //female's state variable, indicate the number of babies in current breeding season
     int vireoNumNests; //number of nests the female agents have in a year
     boolean vireoYoungSpecies;//female's state variable, indicate the species of the youngs. True = "vireo, False = "cowbird"
@@ -444,10 +444,10 @@ public class LBVIAgent implements Steppable {
         if (!potentialTerritoryList.isEmpty()) {
             for (int i = potentialTerritoryList.size()-1; i>=0; i--) {
                 VegInfoIdentifier terr = state.vegTerrInfo.get(potentialTerritoryList.get(i));
-                if (!this.vireoSexFemale && terr.terrMaleID != 0) { //this is a male agent, and this territory already has another male
+                if (!this.vireoSexFemale && terr.terrMaleID != -1) { //this is a male agent, and this territory already has another male
                     //exclude this territory from potentialList
                     potentialTerritoryList.remove(i);
-                } else if (this.vireoSexFemale && terr.terrFemaleID != 0) { //this is a female agent, and this territory already has another female
+                } else if (this.vireoSexFemale && terr.terrFemaleID != -1) { //this is a female agent, and this territory already has another female
                     //exclude this territory from potentialList
                     potentialTerritoryList.remove(i);
                 } else if (terr.terrQuality == 0) {
@@ -563,7 +563,38 @@ for breeding.
         //a territory was chosen this step (stage advanced to PAIR): record the realized dispersal
         if (this.vireoReproStage == Stage.PAIR) {
             this.vireoPreviousLocation = dispersalOrigin;
+            claimTerritory(state); //mark the territory occupied so others can find a mate / avoid it
             logDispersalDistance(state, dispersalOrigin);
+        }
+    }
+
+    /**
+     * Marks this agent's selected territory (vireoCurrentLocation) as occupied by writing this agent's
+     * vireoID into terrMaleID (male) or terrFemaleID (female). This is what makes the same-sex
+     * exclusion in findPotentialTerritoryList and mate lookup (queryTerrByPotentialMales/Females,
+     * PAIR stage) work. Released via releaseTerritory() on death and the annual reset.
+     */
+    private void claimTerritory(LBVIEnvironment state) {
+        VegInfoIdentifier terr = state.vegTerrInfo.get(this.vireoCurrentLocation);
+        if (terr == null) return;
+        if (this.vireoSexFemale) {
+            terr.terrFemaleID = this.vireoID;
+        } else {
+            terr.terrMaleID = this.vireoID;
+        }
+    }
+
+    /**
+     * Frees this agent's current territory (sets the relevant slot back to -1) but only if this agent
+     * still holds it. Idempotent, so it is safe to call more than once per season.
+     */
+    private void releaseTerritory(LBVIEnvironment state) {
+        VegInfoIdentifier terr = state.vegTerrInfo.get(this.vireoCurrentLocation);
+        if (terr == null) return;
+        if (this.vireoSexFemale && terr.terrFemaleID == this.vireoID) {
+            terr.terrFemaleID = -1;
+        } else if (!this.vireoSexFemale && terr.terrMaleID == this.vireoID) {
+            terr.terrMaleID = -1;
         }
     }
 
@@ -700,6 +731,7 @@ for breeding.
 
     public void die(LBVIEnvironment state) {
         //1. remove from their social network (parents, mateID, etc.)
+        releaseTerritory(state); //free the territory this agent held so others can claim it
         //2. stop the event
         event.stop(); //remove the agent from the schedule
         state.vegetationGrid.remove(this);
@@ -707,6 +739,7 @@ for breeding.
     }
 
     public void updateLBVIStateVariables(LBVIEnvironment state) {
+        releaseTerritory(state); //give up this season's territory before resetting for next year
         this.vireoAgeYears ++;
         if (this.vireoAgeYears >= 1) {
             this.vireoAgeClassAdult = true;
